@@ -26,3 +26,10 @@ oc tag jenkins-agent-maven:v4.10-podman jenkins-agent-maven:latest -n openshift
 yaml/jenkins-demo-v1-buildconfig.yaml   # eap
 yaml/jenkins-sample-v1-buildconfig.yaml # openjdk
 ```
+
+# roll 설정
+```code
+
+oc adm policy add-scc-to-user anyuid -z jenkins -n wsjeong-repo    # jenkins 배포프로젝트
+oc adm policy add-role-to-user admin system:serviceaccount:wsjeong-repo:jenkins -n sample    # jenkins 가다름 프로젝트에 접근 권한설정 
+```

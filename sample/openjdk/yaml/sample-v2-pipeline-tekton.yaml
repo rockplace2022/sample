@@ -1,0 +1,75 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  creationTimestamp: "2022-09-13T09:46:17Z"
+  generation: 3
+  name: sample-v2-pipeline
+  namespace: sample
+  resourceVersion: "36066336"
+  uid: d75988e5-658a-4d4a-8fd7-5bae483cc962
+spec:
+  tasks:
+  - name: git-clone
+    params:
+    - name: url
+      value: https://github.com/rockplace2022/hello-source.git
+    - name: submodules
+      value: "true"
+    - name: depth
+      value: "1"
+    - name: sslVerify
+      value: "true"
+    - name: deleteExisting
+      value: "true"
+    - name: verbose
+      value: "true"
+    - name: gitInitImage
+      value: registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:8949bb90e05704aef387e5b8d7143f2dc807c8c693c59193a9bb54d8c0e43b21
+    - name: userHome
+      value: /tekton/home
+    taskRef:
+      kind: ClusterTask
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: sample-v2-workspace
+  - name: maven
+    params:
+    - name: MAVEN_IMAGE
+      value: image-registry.openshift-image-registry.svc:5000/openshift/java:latest
+    - name: GOALS
+      value:
+      - package
+    - name: PROXY_PROTOCOL
+      value: http
+    - name: CONTEXT_DIR
+      value: .
+    runAfter:
+    - git-clone
+    taskRef:
+      kind: ClusterTask
+      name: maven
+    workspaces:
+    - name: source
+      workspace: sample-v2-workspace
+    - name: maven-settings
+      workspace: sample-v2-workspace
+  - name: s2i-build
+    params:
+    - name: SCRIPT
+      value: oc start-build sample-v2 -n sample --from-file=target/undertow-servlet.jar
+        --follow
+    - name: VERSION
+      value: latest
+    runAfter:
+    - maven
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    workspaces:
+    - name: manifest-dir
+      workspace: sample-v2-workspace
+    - name: kubeconfig-dir
+      workspace: sample-v2-workspace
+  workspaces:
+  - name: sample-v2-workspace
