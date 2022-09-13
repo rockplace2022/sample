@@ -1,0 +1,36 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  creationTimestamp: "2022-09-13T14:50:48Z"
+  generation: 10
+  labels:
+    app: jenkins-persistent
+    template: jenkins-persistent-template
+  name: jenkins-demo-v1
+  namespace: wsjeong-repo
+  resourceVersion: "36397898"
+  uid: c8194dc2-b655-49d8-955a-03801f3892ae
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output: {}
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    git:
+      ref: main
+      uri: https://github.com/rockplace2022/demo.git
+    type: Git
+  strategy:
+    jenkinsPipelineStrategy:
+      env:
+      - name: APP_TAG
+        value: v0.1.1
+      - name: PASSWORD
+        value: rplinux
+      jenkinsfilePath: Jenkinsfile-v1
+    type: JenkinsPipeline
+  successfulBuildsHistoryLimit: 5
+status:
+  lastVersion: 6

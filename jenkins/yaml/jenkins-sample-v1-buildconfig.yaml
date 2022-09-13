@@ -1,0 +1,31 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  creationTimestamp: "2022-09-13T15:19:39Z"
+  generation: 1
+  labels:
+    app: jenkins-persistent
+    template: jenkins-persistent-template
+  name: jenkins-sample-v1
+  namespace: wsjeong-repo
+  resourceVersion: "36401279"
+  uid: 28e515a7-c14f-4784-8855-ea5b4fd25d5b
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output: {}
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    git:
+      ref: main
+      uri: https://github.com/rockplace2022/hello-source.git
+    type: Git
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: Jenkinsfile-v1
+    type: JenkinsPipeline
+  successfulBuildsHistoryLimit: 5
+status:
+  lastVersion: 0
