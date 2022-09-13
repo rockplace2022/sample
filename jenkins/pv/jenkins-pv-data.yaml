@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wsjeong-repo-jenkins-data
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 30Gi
+  nfs:
+    path: /vm/nfs/application/wsjeong-repo/jenkins/jenkins-data
+    server: nfs.ocp4.local
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-sc
+  volumeMode: Filesystem

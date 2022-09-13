@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wsjeong-repo-jenkins-data
+  namespace: wsjeong-repo
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 30Gi
+  storageClassName: nfs-sc
+  volumeMode: Filesystem
+  volumeName: wsjeong-repo-jenkins-data
