@@ -1,0 +1,125 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: eap-app-cicd-pipeline
+  namespace: sample
+spec:
+  params:
+  - default: sample
+    description: 프로젝트명
+    name: PROJECT_NAME
+    type: string
+  - default: eap-app-cicd
+    description: 배포 application  명
+    name: APPLICATION_NAME
+    type: string
+  - default: v0.1.3
+    description: 배포 이미지 tag 정보
+    name: IMAGE_TAG
+    type: string
+  tasks:
+  - name: git-clone
+    params:
+    - name: submodules
+      value: "true"
+    - name: depth
+      value: "1"
+    - name: sslVerify
+      value: "true"
+    - name: deleteExisting
+      value: "true"
+    - name: verbose
+      value: "true"
+    - name: gitInitImage
+      value: registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:8949bb90e05704aef387e5b8d7143f2dc807c8c693c59193a9bb54d8c0e43b21
+    - name: userHome
+      value: /tekton/home
+    - name: url
+      value: https://github.com/rockplace2022/demo.git
+    taskRef:
+      kind: ClusterTask
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: eap-app-cicd-workspace
+  - name: source-build
+    params:
+    - name: MAVEN_IMAGE
+      value: image-registry.openshift-image-registry.svc:5000/openshift/java:latest
+    - name: GOALS
+      value:
+      - package
+    - name: PROXY_PROTOCOL
+      value: http
+    - name: CONTEXT_DIR
+      value: .
+    runAfter:
+    - git-clone
+    taskRef:
+      kind: ClusterTask
+      name: maven
+    workspaces:
+    - name: source
+      workspace: eap-app-cicd-workspace
+    - name: maven-settings
+      workspace: eap-app-cicd-workspace
+  - name: image-build
+    params:
+    - name: IMAGE
+      value: registry.ocp4.local/$(params.PROJECT_NAME)/$(params.APPLICATION_NAME):$(params.IMAGE_TAG)
+    - name: BUILDER_IMAGE
+      value: registry.redhat.io/rhel8/buildah@sha256:23fb7971ea6ac4aaaaa1139473a602df0df19222a3b5a76b551b2b9ddd92e927
+    - name: STORAGE_DRIVER
+      value: vfs
+    - name: DOCKERFILE
+      value: ./Dockerfile
+    - name: CONTEXT
+      value: .
+    - name: TLSVERIFY
+      value: "false"
+    - name: FORMAT
+      value: oci
+    runAfter:
+    - source-build
+    taskRef:
+      kind: ClusterTask
+      name: buildah
+    workspaces:
+    - name: source
+      workspace: eap-app-cicd-workspace
+  - name: image-import
+    params:
+    - name: SCRIPT
+      value: oc import-image $(params.APPLICATION_NAME):$(params.IMAGE_TAG) --from=registry.ocp4.local/$(params.PROJECT_NAME)/$(params.APPLICATION_NAME):$(params.IMAGE_TAG)
+        --confirm -n $(params.PROJECT_NAME)
+    - name: VERSION
+      value: latest
+    runAfter:
+    - image-build
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    workspaces:
+    - name: manifest-dir
+      workspace: eap-app-cicd-workspace
+    - name: kubeconfig-dir
+      workspace: eap-app-cicd-workspace
+  - name: image-deploy
+    params:
+    - name: SCRIPT
+      value: oc tag $(params.APPLICATION_NAME):$(params.IMAGE_TAG) $(params.APPLICATION_NAME):latest
+        -n $(params.PROJECT_NAME)
+    - name: VERSION
+      value: latest
+    runAfter:
+    - image-import
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    workspaces:
+    - name: manifest-dir
+      workspace: eap-app-cicd-workspace
+    - name: kubeconfig-dir
+      workspace: eap-app-cicd-workspace
+  workspaces:
+  - name: eap-app-cicd-workspace
